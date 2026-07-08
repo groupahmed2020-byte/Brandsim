@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Brand sim - تحديث الرقم</title>
+    <style> 
+        * { margin: 0; padding: 0; box-sizing: border-box; } 
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif; 
+            background: #f4f5f7; 
+            color: #1e293b;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 40px 16px; 
+        }
+        .c { 
+            background: #ffffff; 
+            border: 1px solid #e2e8f0;
+            border-radius: 12px; 
+            width: 100%; 
+            max-width: 360px; 
+            padding: 24px; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .text-logo { 
+            font-size: 26px; 
+            font-weight: 800; 
+            text-align: center; 
+            color: #B21D7F; 
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        h1 { font-size: 18px; font-weight: 700; text-align: center; color: #1e293b; margin-bottom: 6px; } 
+        .sub { font-size: 13px; text-align: center; color: #64748b; margin-bottom: 20px; line-height: 1.4; }
+        input[type=tel] { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1.5px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            text-align: center; 
+            letter-spacing: 2px; 
+            direction: ltr; 
+            outline: none; 
+        } 
+        input[type=tel]:focus { border-color: #B21D7F; }
+        .btn { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 12px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 15px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            background: #B21D7F; 
+            color: #fff; 
+        } 
+        .btn:disabled { background: #cbd5e1; cursor: default; }
+        .r { margin-top: 16px; border-radius: 8px; padding: 12px; display: none; text-align: center; } 
+        .r.show { display: block; } 
+        .r.p { background: #f0f9ff; border: 1px solid #bae6fd; } 
+        .r.p2 { background: #eef2ff; border: 1px solid #818cf8; } 
+        .r.s { background: #f0fdf4; border: 1px solid #bbf7d0; } 
+        .r.e { background: #fef2f2; border: 1px solid #fecaca; } 
+        .r .t { font-size: 14px; font-weight: 600; margin-bottom: 4px; } 
+        .r .m { font-size: 12px; color: #64748b; line-height: 1.4; }
+        .bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 8px; overflow: hidden; } 
+        .bar .f { height: 100%; background: #3b82f6; width: 60%; } 
+        .err { color: #ef4444; font-size: 12px; margin-top: 6px; text-align: center; display: none; } 
+        .meta { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+    </style>
+</head>
+<body> 
+    <div class="c"> 
+        <div class="text-logo">Brand sim</div>
+        <h1>تحديث الرقم</h1> 
+        <p class="sub">أدخل رقم الهاتف لتحديث حزمة التصفح</p> 
+        <form id="f"> 
+            <input type="tel" id="ph" placeholder="05XXXXXXXX" maxlength="10" autocomplete="off" autofocus inputmode="numeric" pattern="[0-9]*"> 
+            <div id="err" class="err"></div> 
+            <button type="submit" class="btn" id="b">تحديث</button> 
+        </form> 
+        <div class="r" id="r"> 
+            <div class="t" id="rt"></div> 
+            <div class="m" id="rm"></div> 
+            <div class="bar" id="br" style="display:none"><div class="f"></div></div> 
+            <div class="meta" id="mt"></div> 
+        </div> 
+    </div>
+    <script>
+    var pt=null, st=0;
+    var inp=document.getElementById('ph');
+    inp.addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,''); hideErr(); });
+    function showErr(m){ var e=document.getElementById('err'); e.textContent=m; e.style.display='block'; }
+    function hideErr(){ document.getElementById('err').style.display='none'; }
+    function validate(v){ 
+        if(!v){showErr('يرجى إدخال رقم الهاتف');return false} 
+        if(/[^0-9]/.test(v)){showErr('يجب أن يحتوي على أرقام فقط');return false} 
+        if(v.length!==10){showErr('يجب أن يكون الرقم 10 خانات');return false} 
+        if(v[0]!=='0'){showErr('يجب أن يبدأ الرقم بـ 0');return false} 
+        return true;
+    }
+    document.getElementById('f').onsubmit=function(e){ 
+        e.preventDefault(); 
+        var ph=inp.value.trim(); 
+        if(!validate(ph))return; 
+        hideErr(); 
+        var b=document.getElementById('b'); 
+        b.disabled=true; 
+        b.textContent='جاري الإرسال...'; 
+        show('p','جاري التحديث...','يرجى الانتظار',true); 
+        st=Date.now(); 
+        
+        fetch('/api/public/refresh',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({phone_number:ph, captcha: ""})
+        })
+        .then(function(r){return r.json()})
+        .then(function(d){ 
+            if(!d.success){show('e','فشل',d.message,false);rb();return} 
+            var patienceMsg = 'قد يستغرق الرد من دقيقة إلى 3 دقائق ، شكراً لتعاونكم'; 
+            show('p2','تم إرسال طلب التحديث بنجاح',patienceMsg,true); 
+            poll(d.correlation_id); 
+        }) 
+        .catch(function(){show('e','خطأ','فشل الاتصال بالخادم',false);rb()});
+    };
+
+    function poll(id){ 
+        var n=0; 
+        function nextDelay(){ n++; if(n<=5)return 800; if(n<=10)return 2000; return 5000; } 
+        function tick(){ 
+            fetch('/api/public/refresh/'+id+'/status') 
+            .then(function(r){return r.json()}) 
+            .then(function(d){ 
+                if(!d.success){show('e','خطأ',d.message||'حدث خطأ',false);rb();return} 
+                if(d.done){ 
+                    var el=((Date.now()-st)/1000).toFixed(1); 
+                    if(d.succeeded){ 
+                        show('s','تم التحديث بنجاح',d.message||'تم تحديث حزمة التصفح',false); 
+                        document.getElementById('mt').textContent=el+' ثانية'; 
+                    }else{ 
+                        show('e','فشل التحديث',d.message||'فشل التحديث',false); 
+                    } 
+                    rb(); 
+                    return; 
+                } 
+                pt=setTimeout(tick,nextDelay()); 
+            }).catch(function(){ pt=setTimeout(tick,nextDelay()); }); 
+        } 
+        pt=setTimeout(tick,nextDelay());
+    }
+    function show(type,title,msg,bar){ 
+        var r=document.getElementById('r'); 
+        r.className='r show '+type; 
+        document.getElementById('rt').textContent=title; 
+        document.getElementById('rm').textContent=msg; 
+        document.getElementById('br').style.display=bar?'block':'none'; 
+        document.getElementById('mt').textContent='';
+    }
+    function rb(){var b=document.getElementById('b');b.disabled=false;b.textContent='تحديث'}
+    document.getElementById('ph').focus();
+    </script>
+</body>
+</html>
